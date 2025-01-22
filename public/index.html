@@ -1,50 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chat App</title>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    ul { list-style-type: none; padding: 0; }
-    li { padding: 8px; margin-bottom: 8px; background: #f1f1f1; border-radius: 4px; }
-    #messages { margin-bottom: 16px; }
-    #form { display: flex; }
-    #input { flex: 1; padding: 8px; }
-    #send { padding: 8px; }
-  </style>
+  <link rel="stylesheet" href="index.css">
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <h1>Chat App</h1>
-  <ul id="messages"></ul>
-  <form id="form" action="">
-    <input id="input" autocomplete="off" placeholder="Type a message" />
-    <button id="send">Send</button>
-  </form>
+  <!-- Login Screen -->
+  <div id="login" style="display: block;">
+    <h1>Welcome to the Chat App</h1>
+    <input id="email" type="text" placeholder="Enter your name" required />
+    <button id="join">Join Chat</button>
+  </div>
 
-  <script src="/socket.io/socket.io.js"></script>
+  <!-- Chat Screen -->
+  <div id="chat" style="display: none;">
+    <h1>Chat Room</h1>
+    <ul id="messages"></ul>
+    <form id="form" action="">
+      <input id="input" autocomplete="off" placeholder="Type a message" />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
   <script>
     const socket = io();
-
+    const messages = document.getElementById("messages");
     const form = document.getElementById("form");
     const input = document.getElementById("input");
-    const messages = document.getElementById("messages");
+    const emailInput = document.getElementById("email");
+    const joinButton = document.getElementById("join");
 
-    // Send message to the server
+    let username;
+    let targetUser;
+
+    // Handle join event
+    joinButton.addEventListener("click", () => {
+      username = emailInput.value.trim();
+      targetUser = prompt("Enter the name of the person you want to chat with:");
+
+      if (!username || !targetUser) {
+        alert("Both your name and the target user's name are required.");
+        return;
+      }
+
+      // Emit the "join" event with username and target user
+      socket.emit("join", { username, targetUser });
+
+      // Hide the login screen and show the chat screen
+      document.getElementById("login").style.display = "none";
+      document.getElementById("chat").style.display = "block";
+    });
+
+    // Handle form submission for sending messages
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      if (input.value) {
-        socket.emit("chat message", input.value);
+      const message = input.value.trim();
+
+      if (message) {
+        socket.emit("chat message", { username, message, targetUser });
         input.value = "";
       }
     });
 
-    // Receive message from the server
-    socket.on("chat message", (msg) => {
+    // Display received messages
+    socket.on("chat message", (data) => {
       const item = document.createElement("li");
-      item.textContent = msg;
+      item.textContent = `[${new Date().toLocaleTimeString()}] ${data.username}: ${data.message}`;
       messages.appendChild(item);
-      window.scrollTo(0, document.body.scrollHeight);
+    });
+
+    // Display chat history when joining
+    socket.on("chat history", (chats) => {
+      chats.forEach((chat) => {
+        const item = document.createElement("li");
+        item.textContent = `[${new Date(chat.timestamp).toLocaleTimeString()}] ${chat.username}: ${chat.message}`;
+        messages.appendChild(item);
+      });
+    });
+
+    // Notify about errors or alerts
+    socket.on("notification", (msg) => {
+      alert(msg);
     });
   </script>
 </body>
