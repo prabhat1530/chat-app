@@ -13,7 +13,7 @@ const users = {}; // To store connected users and their rooms
 // MongoDB connection
 const MONGO_URI = "mongodb+srv://pk15sk30:pM3fsNELLhONZJi2@cluster0.wmbk7.mongodb.net/?retryWrites=true&w=majority";
 mongoose
-  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(MONGO_URI)
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
